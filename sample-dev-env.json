@@ -1,0 +1,8 @@
+{
+    "cc_token" :  "xxxxxxxx", 
+    "cc_environment" : "sandbox or prod",
+    "http_port" : "5000",    
+    "cert_key_path" : "./cert/key.pem",
+    "cert_cert_path" : "./cert/server.crt",
+    "logfilepathandname": "./logs/ccprocessors/log.log"
+}
