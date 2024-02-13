@@ -1,6 +1,8 @@
 import fetch from "node-fetch"
 import * as utils from "./utilities"
 import { ICreditCardItem } from "./models";
+import { IProcessorClient } from "./iProcessorClient";
+import { clone } from "lodash"
 
 // https://docs.clover.com/docs/test-card-numbers
 
@@ -14,10 +16,13 @@ export class CloverCharge {
     external_reference_id: string = ""; //order number
     external_customer_reference: string = ""; //customer number
     source: string = ""; //token
+    clientip : string;
+    chargeid : string;
+    authid : string;
 
 }
 
-export class CloverClient {
+export class CloverClient implements IProcessorClient {
 
     // cloverInstance: any = null;
     ACCESS_TOKEN = "";
@@ -46,7 +51,7 @@ export class CloverClient {
                     accept: 'application/json',
                     authorization: `Bearer ${this.ACCESS_TOKEN}`
                 }
-            };       
+            };
 
             let returnData : any = await (await fetch(`${this.ecomm_base_url}/pakms/apikey`, options)).json();
             if(returnData.apiAccessKey){
@@ -71,19 +76,27 @@ export class CloverClient {
         }
     }
 
-    async CreateCardToken(cc: ICreditCardItem, apikey: string): Promise<string> {
+    async CreateCardToken(card: ICreditCardItem, apikey: string): Promise<string> {
         //https://docs.clover.com/reference/create-card-token
         // console.log("** createCardToken");
 
+        let cc : ICreditCardItem | any = clone(card);
         if (apikey == null || apikey == "") {
             throw new Error("apikey is required.");
         }
 
-        if (cc.name == null || cc.name == "") {
+        cc["exp_month"] = utils.CCFormatMM(card.exp_month);
+
+        //clover requires name to be in one field
+        cc["name"] = cc.fname + " " + cc.lname;        
+        delete cc.fname;
+        delete cc.lname;
+
+        if (utils.IsNullOrUndefined(cc["name"])) {
             throw new Error("ccname is required.");
         }
 
-        if (cc.name == null || cc.number == "") {
+        if (cc.number == "") {
             throw new Error("ccnumber is required.");
         }
 
@@ -97,6 +110,11 @@ export class CloverClient {
         
         if (cc.cvv == null || cc.cvv == "") {
             throw new Error("cvv is required.");
+        }
+        
+        if(utils.CCIsCardExpired(card.exp_year, card.exp_month)){
+            //expired
+            throw new Error("card is expired.");
         }
         
         try {
@@ -149,7 +167,7 @@ export class CloverClient {
 
     }
 
-    async ChargeCardToken(charge: CloverCharge, clientip: string) : Promise<any> {
+    async ChargeCardToken(charge: CloverCharge) : Promise<any> {
 
         // console.log("** chargeCardToken");
 
@@ -161,7 +179,7 @@ export class CloverClient {
             throw new Error("external_reference_id is required.");
         }
 
-        if (clientip == null || clientip == "") {
+        if (charge.clientip == null || charge.clientip == "") {
             throw new Error("clientip is required.");
         }
 
@@ -173,7 +191,7 @@ export class CloverClient {
                 method: 'POST',
                 headers: {
                     accept: 'application/json',
-                    'x-forwarded-for': `${clientip}`,
+                    'x-forwarded-for': `${charge.clientip}`,
                     'content-type': 'application/json',
                     authorization: `Bearer ${this.ACCESS_TOKEN}`
                 },
@@ -203,7 +221,7 @@ export class CloverClient {
         }
     }
 
-    async AuthorizeCard(charge: CloverCharge, clientip: string) : Promise<any> {
+    async AuthorizeCard(charge: CloverCharge) : Promise<any> {
 
         // console.log("** chargeCardToken");
 
@@ -215,7 +233,7 @@ export class CloverClient {
             throw new Error("external_reference_id is required.");
         }
 
-        if (clientip == null || clientip == "") {
+        if (charge.clientip == null || charge.clientip == "") {
             throw new Error("clientip is required.");
         }
 
@@ -227,7 +245,7 @@ export class CloverClient {
                 method: 'POST',
                 headers: {
                     accept: 'application/json',
-                    'x-forwarded-for': `${clientip}`,
+                    'x-forwarded-for': `${charge.clientip}`,
                     'content-type': 'application/json',
                     authorization: `Bearer ${this.ACCESS_TOKEN}`
                 },
@@ -285,38 +303,40 @@ export class CloverClient {
         }
     }
 
-    async ChargeChargeId(amount: number, clientip: string, chargeid: string) : Promise<any> {
+    async ChargeAuthorization(charge: CloverCharge) : Promise<any>{
+        return this.ChargeCard(charge);
+    }
+
+    async ChargeCard(charge: CloverCharge) : Promise<any> {
 
         // console.log("** chargeCardToken");
 
-        if (amount <= 0) {
+        if (charge.amount <= 0) {
             throw new Error("amount must be greater than zero.");
         }
-
         
-        if (clientip == null || clientip == "") {
+        if (charge.clientip == null || charge.clientip == "") {
             throw new Error("clientip is required.");
         }
 
-        if (chargeid == null || chargeid == "") {
+        if (charge.chargeid == null || charge.chargeid == "") {
             throw new Error("chargeid is required.");
         }
 
         try {
 
-
             const options = {
                 method: 'POST',
                 headers: {
                     accept: 'application/json',
-                    'x-forwarded-for': `${clientip}`,
+                    'x-forwarded-for': `${charge.clientip}`,
                     'content-type': 'application/json',
                     authorization: `Bearer ${this.ACCESS_TOKEN}`
                 },
                 body: JSON.stringify({amount: 1000})
             };
 
-            let returnData : any = await(await fetch(`${this.ecomm_base_url}/v1/charges/${chargeid}/capture`, options)).json();
+            let returnData : any = await(await fetch(`${this.ecomm_base_url}/v1/charges/${charge.chargeid}/capture`, options)).json();
             if(returnData.paid !== undefined && returnData.status !== undefined) {
                 return returnData;
             } else {

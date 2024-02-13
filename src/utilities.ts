@@ -1,4 +1,4 @@
-import { assign, pick, keys, isUndefined, isNull, each, isDate, isString, isObject } from 'lodash'
+import { assign, pick, keys, isUndefined, isNull, isDate, isString, isObject } from 'lodash'
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import * as fssynch from 'fs';
@@ -233,3 +233,43 @@ export function FileExists(src: string): boolean {
   return fssynch.existsSync(src);
 }
 
+export function ParseQueryString(queryString: string): any {
+  const params: { [key: string]: string } = {};
+
+  const queries = queryString.split('&');
+  for (const query of queries) {
+    const [key, value] = query.split('=');
+    params[key] = decodeURIComponent(value);
+  }
+
+  return params;
+}
+
+export function CCFormatAmount(amount: number) : string {  
+  return amount.toFixed(2);
+}
+
+export function CCFormatMM(month: number) : string {  
+  if(month.toString().length == 1){
+    return "0" + month.toString();
+  }
+  return month.toString();
+}
+
+export function CCIsCardExpired(exp_year: number, exp_month: number, currentDate?: Date) : boolean {
+  
+  if(!currentDate){
+    currentDate = new Date();    
+  }
+  const currentYear = currentDate.getUTCFullYear();
+  const currentMonth = currentDate.getUTCMonth() + 1;
+  
+  if (exp_year < currentYear) {
+    return true;
+  } else if (exp_year > currentYear) {
+    return false;
+  } else {
+    return exp_month > currentMonth;
+  }
+
+}

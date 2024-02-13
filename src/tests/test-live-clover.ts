@@ -1,11 +1,41 @@
-import { CloverClient } from "./cloverClient";
-import { CreditCardProcessor } from "./creditCardProcessor";
-import { GetENV } from './env'
-import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
+import { CreditCardProcessor } from "../creditCardProcessor";
+import { GetENV } from '../env'
+import { CCBrands, ChargeResult, ICreditCardItem, CCProcessors } from "../models";
+
+const PROCESSOR = CCProcessors.clover;
+const CONFIGFILE = "./src/tests/dev-env-clover.json";
+
+ //this is a live test! make sure you set your cc_environment to sandbox
+ export class CreditCardItem implements ICreditCardItem {
+    brand: CCBrands = CCBrands.MC; // ** required
+    number: string = ""; // cc number ** required
+    exp_month: number; // two digit month ** required
+    exp_year: number; // 4 digit year ** required
+    fname: string = "";
+    lname: string = "";
+    cvv: string = ""; //security code ** required
+    first6: string = "000000";  //first 6 digits of card ** required
+    country: string = "US"; //country code ** required
+    last4: string = "0000"; // ** required
+    address_line1: string = ""; //'address1';
+    address_line2: string = ""; //'address2';
+    address_city: string = ""; //'irving';
+    address_state: string = ""; // 'tx';
+    address_zip: string = ""; // "75063";
+    address_country: "US"
+    amountCharge: number; //format is 1.00 = $1.00
+    processortype: CCProcessors;
+    clientIP = "192.168.1.1";
+    external_reference_id: string = ""; //order number
+    external_customer_reference: string = ""; //customer number
+    cardid: string = "";
+    authid: string = "";
+    chargeid: string = "";
+}
 
 (async () => {
-
-    let config = await GetENV();
+   
+    let config = await GetENV(CONFIGFILE);
     let ccProc = new CreditCardProcessor(config);
 
     /*
@@ -20,51 +50,17 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
     Mastercard	5204245250003294
     Amex	    375186917371340
     Discover	6011000050617475
-    */
-
-    async function TestCloverApproval() {
-        //response should be Success (approve)
-
-        const clw = new CloverClient(config.clover_token, config.clover_environment);
-        let apikey = await clw.GetAPIKey();
-        var card = new CreditCardItem();
-
-        card.brand = CCBrands.VISA;
-        card.number = '4761530001111126';
-        card.exp_month = '10';
-        card.exp_year = '2027';
-        card.name = 'Test User';
-        card.cvv = '123';
-        card.first6 = '601136';
-        card.country = 'US';
-        card.last4 = '6668';
-        card.address_line1 = 'address1';
-        card.address_line2 = 'address2';
-        card.address_city = 'irving';
-        card.address_state = 'tx';
-        card.address_zip = '75063';
-        card.address_country = 'US';
-
-        let token = await clw.CreateCardToken(card, apikey);
-
-        let charge = await clw.CreateCharge(token);
-        charge.amount = 1000; //$10.00
-        //charge.external_reference_id = "order123";
-        //charge.external_customer_reference = "customer123";
-
-        let chargeResult = await clw.ChargeCardToken(charge, "192.168.1.161");
-        return chargeResult;
-    }
-
-    async function TestCCProcessorApproval(): Promise<ChargeResult> {
+    */  
+    async function TestChargeCard(): Promise<ChargeResult> {
 
         //response should be Success (approve)        
         let card = new CreditCardItem();
         card.brand = CCBrands.VISA;
         card.number = "4761530001111126"; //'6011361000006668';
-        card.exp_month = '10';
-        card.exp_year = '2027';
-        card.name = 'Test User';
+        card.exp_month = 10;
+        card.exp_year = 2027;
+        card.fname = 'Test';
+        card.lname = 'User';
         card.cvv = '123';
         card.first6 = '527515';
         card.country = 'US';
@@ -76,7 +72,7 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         card.address_zip = '75063';
         card.address_country = 'US';
 
-        card.processortype = CCProcessors.clover;
+        card.processortype = PROCESSOR;
         card.clientIP = "192.168.1.1";
         card.amountCharge = 10.00;
         card.external_reference_id = "order456";
@@ -89,16 +85,17 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         return result;
     }
 
-    async function TestCCProcessorDecline(): Promise<ChargeResult> {
+    async function TestChargeCardDecline(): Promise<ChargeResult> {
 
         //response should be Success (approve)   
 
         let card = new CreditCardItem();
         card.brand = CCBrands.VISA;
         card.number = '4005571702222222';
-        card.exp_month = '10';
-        card.exp_year = '2027';
-        card.name = 'Test User';
+        card.exp_month = 10;
+        card.exp_year = (new Date()).getFullYear() + 1;
+        card.fname = 'Test';
+        card.lname = 'User';
         card.cvv = '123';
         card.first6 = '527515';
         card.country = 'US';
@@ -110,7 +107,7 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         card.address_zip = '75063';
         card.address_country = 'US';
 
-        card.processortype = CCProcessors.clover;
+        card.processortype = PROCESSOR;
         card.clientIP = "192.168.1.1";
         card.amountCharge = 10.00;
         card.external_reference_id = "order456";
@@ -123,16 +120,17 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         return result;
     }
 
-    async function TestCCProcessorExpired(): Promise<ChargeResult> {
+    async function TestExpired(): Promise<ChargeResult> {
 
-        //response should be Success (approve)   
-
+        //this card is expired 
+        //charge should fail
         let card = new CreditCardItem();
         card.brand = CCBrands.VISA;
         card.number = '6011361000006668';
-        card.exp_month = '10';
-        card.exp_year = '2021';
-        card.name = 'Test User';
+        card.exp_month = 10;
+        card.exp_year = 2000;
+        card.fname = 'Test';
+        card.lname = 'User';
         card.cvv = '123';
         card.first6 = '527515';
         card.country = 'US';
@@ -144,7 +142,7 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         card.address_zip = '75063';
         card.address_country = 'US';
 
-        card.processortype = CCProcessors.clover;
+        card.processortype = PROCESSOR;
         card.clientIP = "192.168.1.1";
         card.amountCharge = 10.00;
         card.external_reference_id = "order456";
@@ -157,15 +155,16 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         return result;
     }
 
-    async function TestCCProcessorBadNumber(): Promise<ChargeResult> {
+    async function TestBadNumber(): Promise<ChargeResult> {
 
         //response should be Success (approve)
         let card = new CreditCardItem();
         card.brand = CCBrands.VISA;
         card.number = '66666666';
-        card.exp_month = '10';
-        card.exp_year = '2021';
-        card.name = 'Test User';
+        card.exp_month = 10;
+        card.exp_year = (new Date()).getFullYear() + 1;
+        card.fname = 'Test';
+        card.lname = 'User';
         card.cvv = '123';
         card.first6 = '527515';
         card.country = 'US';
@@ -177,7 +176,7 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         card.address_zip = '75063';
         card.address_country = 'US';
 
-        card.processortype = CCProcessors.clover;
+        card.processortype = PROCESSOR;
         card.clientIP = "192.168.1.1";
         card.amountCharge = 10.00;
         card.external_reference_id = "order456";
@@ -190,15 +189,16 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         return result;
     }
 
-    async function TestCCProcessorBadCVC(): Promise<ChargeResult> {
+    async function TestBadCVV(): Promise<ChargeResult> {
 
         //response should be Success (approve)
         let card = new CreditCardItem();
         card.brand = CCBrands.VISA;
         card.number = '4761530001111126';
-        card.exp_month = '10';
-        card.exp_year = '2021';
-        card.name = 'Test User';
+        card.exp_month = 10;
+        card.exp_year = (new Date()).getFullYear() + 1;
+        card.fname = 'Test';
+        card.lname = 'User';
         card.cvv = '99';
         card.first6 = '527515';
         card.country = 'US';
@@ -210,7 +210,7 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         card.address_zip = '75063';
         card.address_country = 'US';
 
-        card.processortype = CCProcessors.clover;
+        card.processortype = PROCESSOR;
         card.clientIP = "192.168.1.1";
         card.amountCharge = 10.00;
         card.external_reference_id = "order456";
@@ -223,15 +223,16 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         return result;
     }
 
-    async function TestCCProcessorDeclinedAmount(): Promise<ChargeResult> {
+    async function TestDeclineAmount(): Promise<ChargeResult> {
 
         //response should be Success (approve)
         let card = new CreditCardItem();
         card.brand = CCBrands.VISA;
         card.number = '4761530001111126';
-        card.exp_month = '10';
-        card.exp_year = '2021';
-        card.name = 'Test User';
+        card.exp_month = 10;
+        card.exp_year = (new Date()).getFullYear() + 1;
+        card.fname = 'Test';
+        card.lname = 'User';
         card.cvv = '123';
         card.first6 = '527515';
         card.country = 'US';
@@ -243,7 +244,7 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         card.address_zip = '75063';
         card.address_country = 'US';
 
-        card.processortype = CCProcessors.clover;
+        card.processortype = PROCESSOR;
         card.clientIP = "192.168.1.1";
         card.amountCharge = 1000000.00;
         card.external_reference_id = "order456";
@@ -256,16 +257,17 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         return result;
     }
 
-    async function TestCCProcessorAuthorizeChargeApproval(): Promise<ChargeResult> {
+    async function TestAuthorizeAndCharge(): Promise<ChargeResult> {
 
         //response should be Success (approve)
 
         let card = new CreditCardItem();
         card.brand = CCBrands.VISA;
         card.number = "4761530001111126"; //'6011361000006668';
-        card.exp_month = '10';
-        card.exp_year = '2027';
-        card.name = 'Test User';
+        card.exp_month = 10;
+        card.exp_year = (new Date()).getFullYear() + 1;
+        card.fname = 'Test';
+        card.lname = 'User';
         card.cvv = '123';
         card.first6 = '527515';
         card.country = 'US';
@@ -277,7 +279,7 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
         card.address_zip = '75063';
         card.address_country = 'US';
 
-        card.processortype = CCProcessors.clover;
+        card.processortype = PROCESSOR;
         card.clientIP = "192.168.1.1";
         card.amountCharge = 10.00;
         card.external_reference_id = "order456";
@@ -301,53 +303,53 @@ import { CCBrands, ChargeResult, CreditCardItem, CCProcessors } from "./models";
 
     let response: ChargeResult = null;
 
-    response = await TestCCProcessorApproval();
+    response = await TestChargeCard();
     if (response.success == true) {
-        console.log("TestCCProcessorApproval Passed");
+        console.log("TestChargeCard Passed");
     } else {
-        console.log("TestCCProcessorApproval Failed ***");
+        console.log("TestChargeCard Failed ***");
     }
 
-    response = await TestCCProcessorDecline();
+    response = await TestChargeCardDecline();
     if (response.success == false) {
-        console.log("TestCCProcessorDecline Passed");
+        console.log("TestChargeCardDecline Passed");
     } else {
-        console.log("TestCCProcessorDecline Failed ***");
+        console.log("TestChargeCardDecline Failed ***");
     }
 
-    response = await TestCCProcessorExpired();
+    response = await TestExpired();
     if (response.success == false) {
-        console.log("TestCCProcessorDecline Passed");
+        console.log("TestExpired Passed");
     } else {
-        console.log("TestCCProcessorExpired Failed ***");
+        console.log("TestExpired Failed ***");
     }
 
-    response = await TestCCProcessorBadNumber();
+    response = await TestBadNumber();
     if (response.success == false) {
-        console.log("TestCCProcessorBadNumber Passed");
+        console.log("TestBadNumber Passed");
     } else {
-        console.log("TestCCProcessorBadNumber Failed ***");
+        console.log("TestBadNumber Failed ***");
     }
 
-    response = await TestCCProcessorBadCVC();
+    response = await TestBadCVV();
     if (response.success == false) {
-        console.log("TestCCProcessorBadCVC Passed");
+        console.log("TestBadCVV Passed");
     } else {
-        console.log("TestCCProcessorBadCVC Failed ***");
+        console.log("TestBadCVV Failed ***");
     }
 
-    response = await TestCCProcessorDeclinedAmount();
+    response = await TestDeclineAmount();
     if (response.success == false) {
-        console.log("TestCCProcessorDeclinedAmount Passed");
+        console.log("TestDeclineAmount Passed");
     } else {
-        console.log("TestCCProcessorDeclinedAmount Failed ***");
+        console.log("TestDeclineAmount Failed ***");
     }
 
-    response = await TestCCProcessorAuthorizeChargeApproval();
+    response = await TestAuthorizeAndCharge();
     if (response.success == true) {
-        console.log("TestCCProcessorAuthorizeChargeApproval Passed");
+        console.log("TestAuthorizeAndCharge Passed");
     } else {
-        console.log("TestCCProcessorAuthorizeChargeApproval Failed ***");
+        console.log("TestAuthorizeAndCharge Failed ***");
     }
 
 })();

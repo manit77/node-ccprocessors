@@ -272,4 +272,4 @@ project.lock.json
 #####
 **/public/uploads/*
 **/temp/*
-dev-env.json
+dev-env*.json

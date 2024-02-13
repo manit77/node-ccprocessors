@@ -1,28 +1,37 @@
-import { CloverClient } from "./cloverClient";
+import { CloverCharge, CloverClient } from "./cloverClient";
+import { IProcessorClient } from "./iProcessorClient";
+import { CeleroCharge, CeleroClient } from "./celeroClient"
 import { CCBrands, ChargeResult, ICreditCardItem, CCProcessors } from "./models";
 import * as utils from "./utilities"
 import NodeCache from "node-cache";
 
+
 export class CreditCardProcessor {
 
     cache = new NodeCache({ stdTTL: 3600, checkperiod: 3620 });
-    clover : CloverClient = null;
+    ccClient: IProcessorClient = null;
 
     constructor(private config) {
-       
+
     }
- 
-    GetCCClient(ptype : CCProcessors) {
-        if(ptype == CCProcessors.clover){
-            if(this.clover == null){
-                this.clover = new CloverClient(this.config.cc_token, this.config.cc_environment);
+
+    GetProcessorClient(ptype: CCProcessors): IProcessorClient {
+        if (ptype == CCProcessors.clover) {
+            if (this.ccClient == null) {
+                this.ccClient = new CloverClient(this.config.cc_token, this.config.cc_environment);
             }
-            return this.clover;
+            return this.ccClient;
+        } else if (ptype == CCProcessors.celero) {
+            if (this.ccClient == null) {
+                //Celero environment is handled in the admin interface
+                this.ccClient = new CeleroClient(this.config.cc_token);
+            }
+            return this.ccClient;
         }
         return null;
     }
 
-    GetCardType(number: string) : CCBrands {
+    GetCardType(number: string): CCBrands {
         const re = {
             VISA: /^4[0-9]{12}(?:[0-9]{3})?$/,
             MC: /^(5[1-5][0-9]{14}|2(22[1-9][0-9]{12}|2[3-9][0-9]{13}|[3-6][0-9]{14}|7[0-1][0-9]{13}|720[0-9]{12}))$/,
@@ -64,7 +73,8 @@ export class CreditCardProcessor {
 
         dest.first6 = src.first6;
         dest.last4 = src.last4;
-        dest.name = src.name;
+        dest.fname = src.fname;
+        dest.lname = src.lname;
         dest.number = src.number;
     }
 
@@ -77,12 +87,12 @@ export class CreditCardProcessor {
             case CCProcessors.clover:
                 {
                     try {
-                        
-                        let cloverClient = this.GetCCClient(card.processortype);
-                        let apiKey: string = this.cache.get("apiKey");
+
+                        let cloverClient = this.GetProcessorClient(card.processortype) as CloverClient;
+                        let apiKey: string = this.cache.get("clover_apiKey");
                         if (apiKey == undefined || apiKey == "") {
                             apiKey = await cloverClient.GetAPIKey();
-                            this.cache.set("apiKey", apiKey);
+                            this.cache.set("clover_apiKey", apiKey);
                         }
 
                         //let cloverCard = new CreditCardItem();
@@ -99,8 +109,9 @@ export class CreditCardProcessor {
                         charge.amount = card.amountCharge * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001                        
                         charge.external_customer_reference = card.external_customer_reference;
                         charge.external_reference_id = card.external_reference_id;
+                        charge.clientip = card.clientIP;
 
-                        let returnData: any = await cloverClient.AuthorizeCard(charge, card.clientIP);
+                        let returnData: any = await cloverClient.AuthorizeCard(charge);
                         if (returnData.status === "succeeded") {
                             ccresult.authid = returnData.id;
                             ccresult.success = true;
@@ -122,6 +133,52 @@ export class CreditCardProcessor {
                     }
                     break;
                 }
+            case CCProcessors.celero:
+                try {
+                    let celeroClient = this.GetProcessorClient(card.processortype) as CeleroClient;
+                    let charge: CeleroCharge = {
+                        billing: {
+                            first_name: card.fname,
+                            last_name: card.lname,
+                            address1: card.address_line1,
+                            city: card.address_city,
+                            state: card.address_state,
+                            zip: card.address_zip
+                        },
+                        payment: {
+                            amount: card.amountCharge,
+                            exp_year: card.exp_year,
+                            exp_month: card.exp_month,
+                            ccnumber: card.number,
+                            cvv: card.cvv,
+                            orderid: card.external_customer_reference,
+                            type: "auth"
+                        }
+                    }
+                    let returnData = await celeroClient.AuthorizeCard(charge);
+                    if (returnData.response_code == "100") {
+                        ccresult.success = true;
+                        ccresult.authid = returnData.transactionid;
+                    } else {
+                        ccresult.success = false;
+                    }
+                    ccresult.message = returnData.responsetext;
+                    ccresult.result = JSON.stringify(returnData);
+
+                } catch (err: any) {
+                    ccresult.success = false;
+                    ccresult.result = JSON.stringify(err);
+
+                    if (err.data && err.data.error && err.data.error.message) {
+                        ccresult.message = err.data.error.message;
+                    } else if (err.message) {
+                        ccresult.message = err.message;
+                    } else {
+                        ccresult.message = "error authorizing credit card.";
+                    }
+                }
+
+                break;
             default: {
                 ccresult.success = false;
                 ccresult.result = "processor type not supported."
@@ -138,42 +195,76 @@ export class CreditCardProcessor {
         switch (card.processortype) {
 
             case CCProcessors.clover:
-                {
-                    try {                      
-                        
-                        let cloverClient = this.GetCCClient(card.processortype) as CloverClient;
-                        
-                        let authid = card.authid;
+                try {
 
-                        let amount = card.amountCharge * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001
+                    let cloverClient = this.GetProcessorClient(card.processortype) as CloverClient;
+                    let charge = new CloverCharge();
+                    charge.authid = card.authid;
+                    charge.amount = card.amountCharge * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001
+                    charge.clientip = card.clientIP;
 
-                        let returnData: any = await cloverClient.ChargeChargeId(amount, card.clientIP, authid);
-                        if (returnData.paid === true && returnData.status === "succeeded") {
-                            ccresult.chargeid = returnData.id;
-                            ccresult.success = true;
-                            ccresult.message = "card charged.";
-                        }
+                    let returnData: any = await cloverClient.ChargeCard(charge);
+                    if (returnData.paid === true && returnData.status === "succeeded") {
+                        ccresult.chargeid = returnData.id;
+                        ccresult.success = true;
+                        ccresult.message = "card charged.";
+                    }
 
-                        ccresult.result = JSON.stringify(returnData);
+                    ccresult.result = JSON.stringify(returnData);
 
-                    } catch (err: any) {
-                        ccresult.success = false;
-                        ccresult.result = JSON.stringify(err);
+                } catch (err: any) {
+                    ccresult.success = false;
+                    ccresult.result = JSON.stringify(err);
 
-                        if (err.data && err.data.error && err.data.error.message) {
-                            ccresult.message = err.data.error.message;
-                        } else if (err.message) {
-                            ccresult.message = err.message;
+                    if (err.data && err.data.error && err.data.error.message) {
+                        ccresult.message = err.data.error.message;
+                    } else if (err.message) {
+                        ccresult.message = err.message;
+                    } else {
+                        if (utils.IsString(err)) {
+                            ccresult.message = err;
                         } else {
-                            if (utils.IsString(err)) {
-                                ccresult.message = err;
-                            } else {
-                                ccresult.message = "error charging credit card.";
-                            }
+                            ccresult.message = "error charging credit card.";
                         }
                     }
-                    break;
                 }
+                break;
+
+            case CCProcessors.celero:
+                try {
+                    let celeroClient = this.GetProcessorClient(card.processortype) as CeleroClient;
+                    let charge: CeleroCharge = {
+                        capture: {
+                            amount: card.amountCharge,
+                            orderid: card.external_reference_id,
+                            transactionid: card.authid,
+                            type: "capture",
+                        }
+                    }
+                    let returnData = await celeroClient.ChargeAuthorization(charge);
+                    if (returnData.response_code == "100") {
+                        ccresult.success = true;
+
+                    } else {
+                        ccresult.success = false;
+                    }
+
+                    ccresult.message = returnData.responsetext;
+                    ccresult.result = JSON.stringify(returnData);
+
+                } catch (err: any) {
+                    ccresult.success = false;
+                    ccresult.result = JSON.stringify(err);
+
+                    if (err.data && err.data.error && err.data.error.message) {
+                        ccresult.message = err.data.error.message;
+                    } else if (err.message) {
+                        ccresult.message = err.message;
+                    } else {
+                        ccresult.message = "error authorizing credit card.";
+                    }
+                }
+                break;
             default: {
                 ccresult.success = false;
                 ccresult.result = "processor type not supported."
@@ -192,26 +283,24 @@ export class CreditCardProcessor {
             case CCProcessors.clover:
                 {
                     try {
-                        let cloverClient = this.GetCCClient(card.processortype) as CloverClient;
-                        let apiKey: string = this.cache.get("apiKey");
+                        let cloverClient = this.GetProcessorClient(card.processortype) as CloverClient;
+                        let apiKey: string = this.cache.get("clover_apiKey");
                         if (apiKey == undefined || apiKey == "") {
                             apiKey = await cloverClient.GetAPIKey();
-                            this.cache.set("apiKey", apiKey);
+                            this.cache.set("clover_apiKey", apiKey);
                         }
-
-                        // let cloverCard = new CreditCardItem();
-                        // this.CopyCardToCard(card, cloverCard);
 
                         let token = await cloverClient.CreateCardToken(card, apiKey);
                         ccresult.cardid = token;
 
                         let charge = await cloverClient.CreateCharge(token);
-                      
+
                         charge.amount = card.amountCharge * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001                        
                         charge.external_customer_reference = card.external_customer_reference;
                         charge.external_reference_id = card.external_reference_id;
+                        charge.clientip = card.clientIP;
 
-                        let returnData: any = await cloverClient.ChargeCardToken(charge, card.clientIP);
+                        let returnData: any = await cloverClient.ChargeCardToken(charge);
                         if (returnData.paid === true && returnData.status === "succeeded") {
                             ccresult.chargeid = returnData.id;
                             ccresult.success = true;
@@ -233,6 +322,53 @@ export class CreditCardProcessor {
                     }
                     break;
                 }
+            case CCProcessors.celero:
+                try {
+                    let cleroClient = this.GetProcessorClient(card.processortype) as CeleroClient;
+                    let charge: CeleroCharge = {
+                        billing: {
+                            address1: card.address_line1,
+                            city: card.address_city,
+                            state: card.address_state,
+                            first_name: card.fname,
+                            last_name: card.lname,
+                            zip: card.address_zip
+                        },
+                        payment: {
+                            amount: card.amountCharge,
+                            exp_month: card.exp_month,
+                            exp_year: card.exp_year,
+                            ccnumber: card.number,
+                            cvv: card.cvv,
+                            orderid: card.external_reference_id,
+                            type: "sale"
+                        }
+                    }
+
+                    let celerRes = await cleroClient.ChargeCard(charge);
+                    if (celerRes.response_code == "100") {
+                        ccresult.success = true;
+
+                    } else {
+                        ccresult.success = false;
+                    }
+
+                    ccresult.message = celerRes.responsetext;
+                    ccresult.result = JSON.stringify(celerRes);
+
+                } catch (err: any) {
+                    ccresult.success = false;
+                    ccresult.result = JSON.stringify(err);
+
+                    if (err.data && err.data.error && err.data.error.message) {
+                        ccresult.message = err.data.error.message;
+                    } else if (err.message) {
+                        ccresult.message = err.message;
+                    } else {
+                        ccresult.message = "error charging credit card.";
+                    }
+                }
+                break;
             default: {
                 ccresult.success = false;
                 ccresult.result = "processor type not supported."
