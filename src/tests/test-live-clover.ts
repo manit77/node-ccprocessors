@@ -184,7 +184,7 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
 
         let result = await ccProc.ChargeCard(card);
         // console.log(result);
-        console.log(`TestCCProcessorBadNumber result : ${result.success} ${result.message}`);
+        console.log(`TestCCProcessorBadNumber result : ${result.success} ${result.message} ${result.result}`);
 
         return result;
     }
@@ -218,7 +218,7 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
 
         let result = await ccProc.ChargeCard(card);
         // console.log(result);
-        console.log(`TestCCProcessorBadNumber result : ${result.success} ${result.message}`);
+        console.log(`TestCCProcessorBadNumber result : ${result.success} ${result.message} ${result.result}`);
 
         return result;
     }
@@ -252,7 +252,7 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
 
         let result = await ccProc.ChargeCard(card);
         // console.log(result);
-        console.log(`TestCCProcessorBadNumber result : ${result.success} ${result.message}`);
+        console.log(`TestCCProcessorBadNumber result : ${result.success} ${result.message} ${result.result}`);
 
         return result;
     }
@@ -296,7 +296,7 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
         card.chargeid = result.chargeid;
 
         await ccProc.ChargeAuthorization(card);
-        console.log(`TestCCProcessorAuthorizeChargeApproval result success: ${result.success} ${result.message}`);
+        console.log(`TestCCProcessorAuthorizeChargeApproval result success: ${result.success} ${result.message} ${result.result}`);
 
         return result;
     }

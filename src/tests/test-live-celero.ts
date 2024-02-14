@@ -307,47 +307,47 @@ export class CreditCardItem implements ICreditCardItem {
 
     let response: ChargeResult = null;
 
-    // response = await TestChargeCard();
-    // if (response.success == true) {
-    //     console.log("TestChargeCard Passed");
-    // } else {
-    //     console.log("TestChargeCard Failed ***");
-    // }
+    response = await TestChargeCard();
+    if (response.success == true) {
+        console.log("TestChargeCard Passed");
+    } else {
+        console.log("TestChargeCard Failed ***");
+    }
 
-    // response = await TestChargeCardDecline();
-    // if (response.success == false) {
-    //     console.log("TestChargeCardDecline Passed");
-    // } else {
-    //     console.log("TestChargeCardDecline Failed ***");
-    // }
+    response = await TestChargeCardDecline();
+    if (response.success == false) {
+        console.log("TestChargeCardDecline Passed");
+    } else {
+        console.log("TestChargeCardDecline Failed ***");
+    }
 
-    // response = await TestExpired();
-    // if (response.success == false) {
-    //     console.log("TestExpired Passed");
-    // } else {
-    //     console.log("TestExpired Failed ***");
-    // }
+    response = await TestExpired();
+    if (response.success == false) {
+        console.log("TestExpired Passed");
+    } else {
+        console.log("TestExpired Failed ***");
+    }
 
-    // response = await TestBadNumber();
-    // if (response.success == false) {
-    //     console.log("TestBadNumber Passed");
-    // } else {
-    //     console.log("TestBadNumber Failed ***");
-    // }
+    response = await TestBadNumber();
+    if (response.success == false) {
+        console.log("TestBadNumber Passed");
+    } else {
+        console.log("TestBadNumber Failed ***");
+    }
 
-    // response = await TestBadCVV();
-    // if (response.success == false) {
-    //     console.log("TestBadCVV Passed");
-    // } else {
-    //     console.log("TestBadCVV Failed ***");
-    // }
+    response = await TestBadCVV();
+    if (response.success == false) {
+        console.log("TestBadCVV Passed");
+    } else {
+        console.log("TestBadCVV Failed ***");
+    }
 
-    // response = await TestDeclineAmount();
-    // if (response.success == false) {
-    //     console.log("TestDeclineAmount Passed");
-    // } else {
-    //     console.log("TestDeclineAmount Failed ***");
-    // }
+    response = await TestDeclineAmount();
+    if (response.success == false) {
+        console.log("TestDeclineAmount Passed");
+    } else {
+        console.log("TestDeclineAmount Failed ***");
+    }
 
     response = await TestAuthorizeAndCharge();
     if (response.success == true) {

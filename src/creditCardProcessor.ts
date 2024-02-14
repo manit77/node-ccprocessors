@@ -300,7 +300,7 @@ export class CreditCardProcessor {
                         charge.external_reference_id = card.external_reference_id;
                         charge.clientip = card.clientIP;
 
-                        let returnData: any = await cloverClient.ChargeCardToken(charge);
+                        let returnData: any = await cloverClient.ChargeCard(charge);
                         if (returnData.paid === true && returnData.status === "succeeded") {
                             ccresult.chargeid = returnData.id;
                             ccresult.success = true;
@@ -310,14 +310,11 @@ export class CreditCardProcessor {
 
                     } catch (err: any) {
                         ccresult.success = false;
-                        ccresult.result = JSON.stringify(err);
 
-                        if (err.data && err.data.error && err.data.error.message) {
-                            ccresult.message = err.data.error.message;
-                        } else if (err.message) {
-                            ccresult.message = err.message;
+                        if(err?.response?.data?.error){
+                            ccresult.result = JSON.stringify(err.response.data.error);
                         } else {
-                            ccresult.message = "error charging credit card.";
+                            ccresult.result = JSON.stringify(err);
                         }
                     }
                     break;

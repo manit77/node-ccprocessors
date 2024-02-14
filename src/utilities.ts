@@ -56,40 +56,37 @@ export function IsNullOrUndefined(val: any): boolean {
   return false;
 }
 
-export function IsObject(o) {
+export function IsObject(o: any) {
   return o !== null && typeof o === 'object' && Array.isArray(o) === false;
 }
 
-export function IsDate(o) {
+export function IsDate(o: any) {
   return o instanceof Object && o.constructor === Date;
 }
 
-export function IsString(v) {
+export function IsString(v: any) {
   return typeof v === 'string' || v instanceof String
 }
 
 export function GetTenDigitPhoneNumber(pnum: string): string {
   if (pnum.length > 10) {
-    return pnum.substr(pnum.length - 10, 10);
+    return pnum.substring(pnum.length - 10, 10);
   }
   return pnum;
 }
 
 export function ParseString(invalue: any): String {
-  if (isNull(invalue)) {
+  if (isNull(invalue) || isUndefined(invalue) || isNaN(invalue) || invalue == Infinity) {
     return "";
   }
-  if (isUndefined(invalue)) {
-    return "";
-  }
-  return new String(invalue);
+  return invalue + "";
 }
 
 export function ParseBool(invalue: any): boolean {
   if (isNull(invalue) || isUndefined(invalue)) {
     return false
   }
-  if (invalue == true || invalue == "1" || invalue == "y" || invalue == "Y") {
+  if (invalue == true || invalue == "true" || invalue == "1" || invalue == "y" || invalue == "Y") {
     return true;
   }
   return false;
@@ -97,36 +94,36 @@ export function ParseBool(invalue: any): boolean {
 
 export function ParseNum(invalue: any, defaultvalue = 0): Number {
   var rv = 0;
-  if (invalue == null || invalue == typeof (undefined)) {
+  if (invalue == null || invalue === undefined) {
     rv = defaultvalue
   } else {
     rv = Number(invalue);
-    if (isNaN(rv)) {
+    if (isNaN(rv) || rv == Infinity) {
       rv = defaultvalue;
     }
   }
   return rv;
 }
 
-export function ParseDate(invalue: any, defaultvalue = null) : Date | null {
+export function ParseDate(invalue: any, defaultvalue = null): Date | null {
   var rv = null;
-  if (invalue == null || invalue == typeof (undefined) || invalue === "") {
+  if (invalue == null || invalue === undefined || invalue === "") {
     rv = defaultvalue
-  } else if(isDate(invalue)) {
+  } else if (isDate(invalue)) {
     rv = invalue;
   } else {
     //check if date part
-    if(isString(invalue)){      
-        rv = new Date(invalue);  
+    if (isString(invalue)) {
+      rv = new Date(invalue);
     } else if (isObject(invalue)) {
 
-      if((invalue as any).year && (invalue as any).month && (invalue as any).day){
+      if ((invalue as any).year && (invalue as any).month && (invalue as any).day) {
         //rv = new Date((invalue as any).year, (invalue as any).month - 1, (invalue as any).day, 0, 0, 0, 0);
         //throw error cannot process date part
         throw new Error("date part not supported: " + invalue);
       }
 
-    }  else {
+    } else {
       rv = new Date(invalue);
     }
   }
@@ -142,10 +139,7 @@ export function WeekOfYear(inDate: Date, weekStart: number = 0): Number {
   return Math.floor((((Number(inDate) - Number(januaryFirst)) / 86400000) + januaryFirst.getDay() - weekStart) / 7) + 1;
 }
 
-export function DateDiff(datepart: string, todate: Date, fromdate: Date) {
-
-  datepart = datepart.toLowerCase();
-
+export function DateDiff(datepart: 'w' | 'd' | 'h' | 'n' | 's', todate: Date, fromdate: Date) {
   var diff = Number(todate) - Number(fromdate);
 
   var divideBy: any = {
@@ -156,12 +150,10 @@ export function DateDiff(datepart: string, todate: Date, fromdate: Date) {
     s: 1000 // sec
   };
 
-  var result = Math.abs(Math.trunc(diff / divideBy[datepart]))
-
-  return result;
+  return Math.abs(Math.trunc(diff / divideBy[datepart]));
 }
 
-export async function CreateDirectory(path: string , recursive = true): Promise<boolean> {
+export async function CreateDirectory(path: string, recursive = true): Promise<boolean> {
   try {
     await fs.mkdir(path, { recursive: recursive });
     return true;
@@ -180,7 +172,7 @@ export async function DirectoryExists(path: string): Promise<boolean> {
   }
 }
 
-export async function DeleteFile(src: string) : Promise<boolean> {
+export async function DeleteFile(src: string): Promise<boolean> {
   try {
     await fs.unlink(src);
     return true
@@ -190,7 +182,7 @@ export async function DeleteFile(src: string) : Promise<boolean> {
   return false;
 }
 
-export async function MoveFile(src: string, dst: string) : Promise<boolean> {
+export async function MoveFile(src: string, dst: string): Promise<boolean> {
   try {
     await fs.rename(src, dst);
     return true;
@@ -200,36 +192,36 @@ export async function MoveFile(src: string, dst: string) : Promise<boolean> {
   return false;
 }
 
-export async function ReadFile(src: string): Promise<string>{
+export async function ReadFile(src: string): Promise<string> {
   try {
     let buffer = (await fs.readFile(src));
     let content = await buffer.toString(); //bug, returns a promise of string
     return content;
-  } catch(error){
+  } catch (error) {
     console.log(error);
     throw error;
   }
 }
 
-export async function WriteFile(src: string, content: string): Promise<void>{
+export async function WriteFile(src: string, content: string): Promise<void> {
   try {
     await fs.writeFile(src, content);
-  } catch(error){
+  } catch (error) {
     console.log(error);
     throw error;
   }
 }
 
-export async function AppendFile(src: string, content: string): Promise<void>{
+export async function AppendFile(src: string, content: string): Promise<void> {
   try {
     await fs.appendFile(src, content);
-  } catch(error){
+  } catch (error) {
     console.log(error);
     throw error;
   }
 }
 
-export function FileExists(src: string): boolean {  
+export function FileExists(src: string): boolean {
   return fssynch.existsSync(src);
 }
 
@@ -245,25 +237,25 @@ export function ParseQueryString(queryString: string): any {
   return params;
 }
 
-export function CCFormatAmount(amount: number) : string {  
+export function CCFormatAmount(amount: number): string {
   return amount.toFixed(2);
 }
 
-export function CCFormatMM(month: number) : string {  
-  if(month.toString().length == 1){
+export function CCFormatMM(month: number): string {
+  if (month.toString().length == 1) {
     return "0" + month.toString();
   }
   return month.toString();
 }
 
-export function CCIsCardExpired(exp_year: number, exp_month: number, currentDate?: Date) : boolean {
-  
-  if(!currentDate){
-    currentDate = new Date();    
+export function CCIsCardExpired(exp_year: number, exp_month: number, currentDate?: Date): boolean {
+
+  if (!currentDate) {
+    currentDate = new Date();
   }
   const currentYear = currentDate.getUTCFullYear();
   const currentMonth = currentDate.getUTCMonth() + 1;
-  
+
   if (exp_year < currentYear) {
     return true;
   } else if (exp_year > currentYear) {

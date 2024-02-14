@@ -1,8 +1,8 @@
-import fetch from "node-fetch"
 import * as utils from "./utilities"
 import { ICreditCardItem } from "./models";
 import { IProcessorClient } from "./iProcessorClient";
 import { clone } from "lodash"
+import axios from "axios";
 
 // https://docs.clover.com/docs/test-card-numbers
 
@@ -45,15 +45,16 @@ export class CloverClient implements IProcessorClient {
         console.log("** getAPIKey");
         try {
 
-            const options = {
-                method: 'GET',
+            const options = {                
                 headers: {
                     accept: 'application/json',
                     authorization: `Bearer ${this.ACCESS_TOKEN}`
                 }
             };
 
-            let returnData : any = await (await fetch(`${this.ecomm_base_url}/pakms/apikey`, options)).json();
+            let response = await axios.get(`${this.ecomm_base_url}/pakms/apikey`, options);
+            let returnData = response.data;
+            //let returnData : any = await (await fetch(`${this.ecomm_base_url}/pakms/apikey`, options)).json();
             if(returnData.apiAccessKey){
                 return returnData.apiAccessKey;
             } else {
@@ -119,17 +120,18 @@ export class CloverClient implements IProcessorClient {
         
         try {
 
-            const options = {
-                method: 'POST',
+            const config = {                
                 headers: {
                     accept: 'application/json',
                     apikey: `${apikey}`,
-                    'content-type': 'application/json'
-                },
-                body: JSON.stringify({ card: cc })
+                    'content-type': 'appclication/json'
+                }
             };
-
-            let returnData : any = await(await fetch(`${this.token_base_url}/v1/tokens`, options)).json();
+            let data = { card: cc };
+            let url = `${this.token_base_url}/v1/tokens`;
+            let response = await axios.post(url, data, config);
+            let returnData = response.data;
+            //let returnData : any = await(await fetch(`${this.token_base_url}/v1/tokens`, options)).json();
 
             if(returnData.id){
                 return returnData.id
@@ -167,7 +169,7 @@ export class CloverClient implements IProcessorClient {
 
     }
 
-    async ChargeCardToken(charge: CloverCharge) : Promise<any> {
+    async ChargeCard(charge: CloverCharge) : Promise<any> {
 
         // console.log("** chargeCardToken");
 
@@ -187,18 +189,19 @@ export class CloverClient implements IProcessorClient {
 
             charge.capture = true;
 
-            const options = {
-                method: 'POST',
+            const options = {                
                 headers: {
                     accept: 'application/json',
                     'x-forwarded-for': `${charge.clientip}`,
                     'content-type': 'application/json',
                     authorization: `Bearer ${this.ACCESS_TOKEN}`
-                },
-                body: JSON.stringify(charge)
+                }                
             };
 
-            let returnData : any = await(await fetch(`${this.ecomm_base_url}/v1/charges`, options)).json();
+            //let returnData : any = await(await fetch(`${this.ecomm_base_url}/v1/charges`, options)).json();
+            let response = await axios.post(`${this.ecomm_base_url}/v1/charges`, charge, options);
+            let returnData = response.data;
+
             if(returnData.paid !== undefined && returnData.status !== undefined) {
                 return returnData;
             } else {
@@ -241,18 +244,18 @@ export class CloverClient implements IProcessorClient {
 
             charge.capture = false;
 
-            const options = {
-                method: 'POST',
+            const options = {              
                 headers: {
                     accept: 'application/json',
                     'x-forwarded-for': `${charge.clientip}`,
                     'content-type': 'application/json',
                     authorization: `Bearer ${this.ACCESS_TOKEN}`
-                },
-                body: JSON.stringify(charge)
+                }                
             };
 
-            let returnData : any = await(await fetch(`${this.ecomm_base_url}/v1/charges`, options)).json();
+            //let returnData : any = await(await fetch(`${this.ecomm_base_url}/v1/charges`, options)).json();
+            let response = await axios.post(`${this.ecomm_base_url}/v1/charges`, charge, options);
+            let returnData = response.data;
 /*               
 {
   "id": "8N3BCGMQAS7AJ",
@@ -307,56 +310,57 @@ export class CloverClient implements IProcessorClient {
         return this.ChargeCard(charge);
     }
 
-    async ChargeCard(charge: CloverCharge) : Promise<any> {
+    // async ChargeCard(charge: CloverCharge) : Promise<any> {
 
-        // console.log("** chargeCardToken");
+    //     // console.log("** chargeCardToken");
 
-        if (charge.amount <= 0) {
-            throw new Error("amount must be greater than zero.");
-        }
+    //     if (charge.amount <= 0) {
+    //         throw new Error("amount must be greater than zero.");
+    //     }
         
-        if (charge.clientip == null || charge.clientip == "") {
-            throw new Error("clientip is required.");
-        }
+    //     if (charge.clientip == null || charge.clientip == "") {
+    //         throw new Error("clientip is required.");
+    //     }
 
-        if (charge.chargeid == null || charge.chargeid == "") {
-            throw new Error("chargeid is required.");
-        }
+    //     if (charge.chargeid == null || charge.chargeid == "") {
+    //         throw new Error("chargeid is required.");
+    //     }
 
-        try {
+    //     try {
 
-            const options = {
-                method: 'POST',
-                headers: {
-                    accept: 'application/json',
-                    'x-forwarded-for': `${charge.clientip}`,
-                    'content-type': 'application/json',
-                    authorization: `Bearer ${this.ACCESS_TOKEN}`
-                },
-                body: JSON.stringify({amount: 1000})
-            };
+    //         const options = {               
+    //             headers: {
+    //                 accept: 'application/json',
+    //                 'x-forwarded-for': `${charge.clientip}`,
+    //                 'content-type': 'application/json',
+    //                 authorization: `Bearer ${this.ACCESS_TOKEN}`
+    //             }              
+    //         };
 
-            let returnData : any = await(await fetch(`${this.ecomm_base_url}/v1/charges/${charge.chargeid}/capture`, options)).json();
-            if(returnData.paid !== undefined && returnData.status !== undefined) {
-                return returnData;
-            } else {
-                if(returnData.error){
-                    throw returnData.error;
-                } else if (returnData.message) {
-                    throw returnData.message;
-                } else {
-                    throw "Error charging card."
-                }
-            }
+    //         //let returnData : any = await(await fetch(`${this.ecomm_base_url}/v1/charges/${charge.chargeid}/capture`, options)).json();
+    //         let response = await axios.post(`${this.ecomm_base_url}/v1/charges/${charge.chargeid}/capture`, charge, options);
+    //         let returnData = response.data;
 
-            // const sdk = require('api')('@clover-platform/v3#h6o36lmhj0usb');
-            // sdk.auth(this.ACCESS_TOKEN);
-            // let returnData = await sdk.createCharge(charge, {'x-forwarded-for': clientip});
-            // console.log(returnData.data);
-            // return returnData;
-        } catch (err) {
-            throw err;
-        }
-    }
+    //         if(returnData.paid !== undefined && returnData.status !== undefined) {
+    //             return returnData;
+    //         } else {
+    //             if(returnData.error){
+    //                 throw returnData.error;
+    //             } else if (returnData.message) {
+    //                 throw returnData.message;
+    //             } else {
+    //                 throw "Error charging card."
+    //             }
+    //         }
+
+    //         // const sdk = require('api')('@clover-platform/v3#h6o36lmhj0usb');
+    //         // sdk.auth(this.ACCESS_TOKEN);
+    //         // let returnData = await sdk.createCharge(charge, {'x-forwarded-for': clientip});
+    //         // console.log(returnData.data);
+    //         // return returnData;
+    //     } catch (err) {
+    //         throw err;
+    //     }
+    // }
 
 }

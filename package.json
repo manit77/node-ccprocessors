@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "test-clover": "ts-node -r tsconfig-paths/register ./src/tests/test-live-clover.ts",
+    "test-celero": "ts-node -r tsconfig-paths/register ./src/tests/test-live-celero.ts",
     "servelocal": "ts-node -r tsconfig-paths/register ./src/index.ts"
   },
   "author": "",
@@ -24,12 +26,13 @@
     "typescript": "^4.9.3"
   },
   "dependencies": {
+    "@types/axios": "^0.14.0",
+    "axios": "^1.6.7",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "node-cache": "^5.1.2",
-    "node-fetch": "^2.7.0",
     "save-dev": "^0.0.1-security",
     "tsconfig-paths": "^4.2.0"
   }

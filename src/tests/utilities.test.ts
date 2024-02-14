@@ -1,7 +1,129 @@
-import { CCFormatAmount, CCFormatMM, CCIsCardExpired } from "../utilities";
+import { CCFormatAmount, CCFormatMM, CCIsCardExpired, IsNullOrUndefined, ParseBool, ParseNum, ParseString } from "../utilities";
 
-describe('utilities.ts', () => {
+describe('Test utilities.ts', () => {
+
+  test('ParseString', () => {
+    let res = ParseString(null);
+    expect(res).toBe("");
+
+    res = ParseString(1);
+    expect(res).toBe("1");
+
+    let a;
+    res = ParseString(a);
+    expect(res).toBe("");
+
+    res = ParseString(undefined);
+    expect(res).toBe("");
     
+    res = ParseString({});
+    expect(res).toBe("");
+
+    res = ParseString(NaN);
+    expect(res).toBe("");
+
+    res = ParseString(Infinity);
+    expect(res).toBe("");
+
+  });
+  
+  test('ParseBool', () => {
+    let res = ParseBool(null);
+    expect(res).toBe(false);
+
+    res = ParseBool("true");
+    expect(res).toBe(true);
+
+    res = ParseBool(false);
+    expect(res).toBe(false);
+
+    res = ParseBool("false");
+    expect(res).toBe(false);
+
+    res = ParseBool("1");
+    expect(res).toBe(true);
+
+    res = ParseBool(1);
+    expect(res).toBe(true);
+
+    res = ParseBool(0);
+    expect(res).toBe(false);
+
+    res = ParseBool("0");
+    expect(res).toBe(false);
+
+    res = ParseBool("a");
+    expect(res).toBe(false);
+
+    res = ParseBool("y");
+    expect(res).toBe(true);
+
+    res = ParseBool("Y");
+    expect(res).toBe(true);
+
+    res = ParseBool("n");
+    expect(res).toBe(false);
+
+    res = ParseBool("N");
+    expect(res).toBe(false);
+
+    res = ParseBool(NaN);
+    expect(res).toBe(false);    
+
+    res = ParseBool(Infinity);
+    expect(res).toBe(false);
+
+  });
+
+  test('ParseNum', () => {
+    let res = ParseNum(null);
+    expect(res).toBe(0);
+
+    res = ParseNum("1");
+    expect(res).toBe(1);
+
+    res = ParseNum("a");
+    expect(res).toBe(0);
+
+    res = ParseNum(NaN);
+    expect(res).toBe(0);    
+
+    res = ParseNum(Infinity);
+    expect(res).toBe(0);
+
+  });
+
+  test('IsNullOrUndefined', () => {
+    let res = IsNullOrUndefined(null);
+    expect(res).toBe(true);
+
+    let a;
+    res = IsNullOrUndefined(a);
+    expect(res).toBe(true);
+
+    res = IsNullOrUndefined(undefined);
+    expect(res).toBe(true);
+
+    res = IsNullOrUndefined(1);
+    expect(res).toBe(false);
+
+    res = IsNullOrUndefined("1");
+    expect(res).toBe(false);
+
+    res = IsNullOrUndefined(true);
+    expect(res).toBe(false);
+
+    res = IsNullOrUndefined(false);
+    expect(res).toBe(false);
+
+    res = IsNullOrUndefined(-1);
+    expect(res).toBe(false);
+
+    res = IsNullOrUndefined(NaN);
+    expect(res).toBe(false);
+
+  });
+
   test('CCFormatMM len should be 2', () => {
         let res = CCFormatMM(1);
       expect(res.length).toBe(2);

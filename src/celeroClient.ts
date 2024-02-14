@@ -3,7 +3,8 @@ import https from 'https'
 import { CCFormatAmount, CCFormatMM, CCIsCardExpired, IsNullOrUndefined, ParseQueryString } from 'src/utilities';
 import { IProcessorClient } from './iProcessorClient';
 import { clone } from 'lodash';
-import fetch from "node-fetch"
+
+//reference: https://connect.transactiongateway.com/merchants/resources/integration/integration_portal.php
 
 let CeleroResultCodes = {
     "100": "Transaction was approved.",
@@ -237,8 +238,8 @@ export class CeleroClient implements IProcessorClient {
         postData = querystring.stringify(postData);
         let len = Buffer.byteLength(postData);
 
-        console.log(postData);
-        console.log(len);
+        //console.log(postData);
+        //console.log(len);
 
         const options = {
             hostname: this.hostName,
