@@ -1,6 +1,6 @@
-import { CreditCardProcessor } from "../creditCardProcessor";
-import { GetENV } from '../env'
-import { CCBrands, ChargeResult, ICreditCardItem, CCProcessors } from "../models";
+import { CreditCardProcessor } from "../models/creditCardProcessor";
+import { GetENV } from '../utils/env'
+import { CCBrands, ChargeResult, ICreditCardItem, CCProcessors, IAuthorization } from "../models/models";
 
 const PROCESSOR = CCProcessors.clover;
 const CONFIGFILE = "./src/tests/dev-env-clover.json";
@@ -23,9 +23,9 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
     address_state: string = ""; // 'tx';
     address_zip: string = ""; // "75063";
     address_country: "US"
-    amountCharge: number; //format is 1.00 = $1.00
+    amount: number; //format is 1.00 = $1.00
     processortype: CCProcessors;
-    clientIP = "192.168.1.1";
+    clientip = "192.168.1.1";
     external_reference_id: string = ""; //order number
     external_customer_reference: string = ""; //customer number
     cardid: string = "";
@@ -73,14 +73,14 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
         card.address_country = 'US';
 
         card.processortype = PROCESSOR;
-        card.clientIP = "192.168.1.1";
-        card.amountCharge = 10.00;
+        card.clientip = "192.168.1.1";
+        card.amount = 10.00;
         card.external_reference_id = "order456";
         card.external_customer_reference = "customer456";
 
         let result = await ccProc.ChargeCard(card);
         //console.log(result);
-        console.log(`TestCCProcessorApproval result success: ${result.success} ${result.message}`);
+        console.log(`TestCCProcessorApproval result success: ${result.success} ${result.message} ${result.result}`);
 
         return result;
     }
@@ -108,8 +108,8 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
         card.address_country = 'US';
 
         card.processortype = PROCESSOR;
-        card.clientIP = "192.168.1.1";
-        card.amountCharge = 10.00;
+        card.clientip = "192.168.1.1";
+        card.amount = 10.00;
         card.external_reference_id = "order456";
         card.external_customer_reference = "customer456";
 
@@ -143,8 +143,8 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
         card.address_country = 'US';
 
         card.processortype = PROCESSOR;
-        card.clientIP = "192.168.1.1";
-        card.amountCharge = 10.00;
+        card.clientip = "192.168.1.1";
+        card.amount = 10.00;
         card.external_reference_id = "order456";
         card.external_customer_reference = "customer456";
 
@@ -177,8 +177,8 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
         card.address_country = 'US';
 
         card.processortype = PROCESSOR;
-        card.clientIP = "192.168.1.1";
-        card.amountCharge = 10.00;
+        card.clientip = "192.168.1.1";
+        card.amount = 10.00;
         card.external_reference_id = "order456";
         card.external_customer_reference = "customer456";
 
@@ -211,8 +211,8 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
         card.address_country = 'US';
 
         card.processortype = PROCESSOR;
-        card.clientIP = "192.168.1.1";
-        card.amountCharge = 10.00;
+        card.clientip = "192.168.1.1";
+        card.amount = 10.00;
         card.external_reference_id = "order456";
         card.external_customer_reference = "customer456";
 
@@ -245,8 +245,8 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
         card.address_country = 'US';
 
         card.processortype = PROCESSOR;
-        card.clientIP = "192.168.1.1";
-        card.amountCharge = 1000000.00;
+        card.clientip = "192.168.1.1";
+        card.amount = 1000000.00;
         card.external_reference_id = "order456";
         card.external_customer_reference = "customer456";
 
@@ -280,8 +280,8 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
         card.address_country = 'US';
 
         card.processortype = PROCESSOR;
-        card.clientIP = "192.168.1.1";
-        card.amountCharge = 10.00;
+        card.clientip = "192.168.1.1";
+        card.amount = 10.00;
         card.external_reference_id = "order456";
         card.external_customer_reference = "customer456";
 
@@ -292,10 +292,17 @@ const CONFIGFILE = "./src/tests/dev-env-clover.json";
             return result;
         }
 
-        card.authid = result.authid;
-        card.chargeid = result.chargeid;
+        card.authid = result.authid;        
 
-        await ccProc.ChargeAuthorization(card);
+        let auth : IAuthorization = {
+            amount : card.amount,
+            authid : card.authid,
+            clientip : card.clientip,
+            external_reference_id: card.external_reference_id,
+            processortype: card.processortype
+        }
+
+        await ccProc.ChargeAuthorization(auth);
         console.log(`TestCCProcessorAuthorizeChargeApproval result success: ${result.success} ${result.message} ${result.result}`);
 
         return result;

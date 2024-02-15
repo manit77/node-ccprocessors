@@ -1,9 +1,10 @@
-import { CloverCharge, CloverClient } from "./cloverClient";
+import { CloverCharge, CloverClient } from "../clients/cloverClient";
 import { IProcessorClient } from "./iProcessorClient";
-import { CeleroCharge, CeleroClient } from "./celeroClient"
-import { CCBrands, ChargeResult, ICreditCardItem, CCProcessors } from "./models";
-import * as utils from "./utilities"
+import { CeleroCharge, CeleroClient } from "../clients/celeroClient"
+import { CCBrands, ChargeResult, ICreditCardItem, CCProcessors, IAuthorization } from "./models";
+import * as utils from "../utils/utilities"
 import NodeCache from "node-cache";
+import { AppConfig } from "./appConfig";
 
 
 export class CreditCardProcessor {
@@ -11,20 +12,20 @@ export class CreditCardProcessor {
     cache = new NodeCache({ stdTTL: 3600, checkperiod: 3620 });
     ccClient: IProcessorClient = null;
 
-    constructor(private config) {
+    constructor(private appConfig : AppConfig) {
 
     }
 
     GetProcessorClient(ptype: CCProcessors): IProcessorClient {
         if (ptype == CCProcessors.clover) {
             if (this.ccClient == null) {
-                this.ccClient = new CloverClient(this.config.cc_token, this.config.cc_environment);
+                this.ccClient = new CloverClient(this.appConfig.cc_token(), this.appConfig.cc_environment());
             }
             return this.ccClient;
         } else if (ptype == CCProcessors.celero) {
             if (this.ccClient == null) {
                 //Celero environment is handled in the admin interface
-                this.ccClient = new CeleroClient(this.config.cc_token);
+                this.ccClient = new CeleroClient(this.appConfig.cc_token());
             }
             return this.ccClient;
         }
@@ -56,28 +57,7 @@ export class CreditCardProcessor {
         return null;
     }
 
-    CopyCardToCard(src: ICreditCardItem, dest: ICreditCardItem) {
-        dest.address_city = src.address_city;
-        dest.address_country = src.address_country;
-        dest.address_line1 = src.address_line1;
-        dest.address_line2 = src.address_line2;
-        dest.address_state = src.address_state;
-        dest.address_zip = src.address_zip;
-
-        dest.brand = this.GetCardType(src.number);
-
-        dest.country = src.country;
-        dest.cvv = src.cvv;
-        dest.exp_month = src.exp_month;
-        dest.exp_year = src.exp_year;
-
-        dest.first6 = src.first6;
-        dest.last4 = src.last4;
-        dest.fname = src.fname;
-        dest.lname = src.lname;
-        dest.number = src.number;
-    }
-
+    /// charge an authorization the charges on a card
     async AuthorizeCard(card: ICreditCardItem): Promise<ChargeResult> {
 
         let ccresult = new ChargeResult();
@@ -94,11 +74,7 @@ export class CreditCardProcessor {
                             apiKey = await cloverClient.GetAPIKey();
                             this.cache.set("clover_apiKey", apiKey);
                         }
-
-                        //let cloverCard = new CreditCardItem();
-                        //transfer values over
-                        //this.CopyCardToCard(card, cloverCard);
-
+                      
                         let token = await cloverClient.CreateCardToken(card, apiKey);
 
                         card.cardid = token;
@@ -106,10 +82,10 @@ export class CreditCardProcessor {
                         let charge = await cloverClient.CreateCharge(token);
 
                         //transfer values over
-                        charge.amount = card.amountCharge * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001                        
+                        charge.amount = card.amount * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001                        
                         charge.external_customer_reference = card.external_customer_reference;
                         charge.external_reference_id = card.external_reference_id;
-                        charge.clientip = card.clientIP;
+                        charge.clientip = card.clientip;
 
                         let returnData: any = await cloverClient.AuthorizeCard(charge);
                         if (returnData.status === "succeeded") {
@@ -146,7 +122,7 @@ export class CreditCardProcessor {
                             zip: card.address_zip
                         },
                         payment: {
-                            amount: card.amountCharge,
+                            amount: card.amount,
                             exp_year: card.exp_year,
                             exp_month: card.exp_month,
                             ccnumber: card.number,
@@ -188,7 +164,8 @@ export class CreditCardProcessor {
         return ccresult;
     }
 
-    async ChargeAuthorization(card: ICreditCardItem): Promise<ChargeResult> {
+    /// charge an authorization received from AuthorizeCard
+    async ChargeAuthorization(card: IAuthorization): Promise<ChargeResult> {
 
         let ccresult = new ChargeResult();
 
@@ -200,8 +177,8 @@ export class CreditCardProcessor {
                     let cloverClient = this.GetProcessorClient(card.processortype) as CloverClient;
                     let charge = new CloverCharge();
                     charge.authid = card.authid;
-                    charge.amount = card.amountCharge * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001
-                    charge.clientip = card.clientIP;
+                    charge.amount = card.amount * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001
+                    charge.clientip = card.clientip;
 
                     let returnData: any = await cloverClient.ChargeCard(charge);
                     if (returnData.paid === true && returnData.status === "succeeded") {
@@ -235,7 +212,7 @@ export class CreditCardProcessor {
                     let celeroClient = this.GetProcessorClient(card.processortype) as CeleroClient;
                     let charge: CeleroCharge = {
                         capture: {
-                            amount: card.amountCharge,
+                            amount: card.amount,
                             orderid: card.external_reference_id,
                             transactionid: card.authid,
                             type: "capture",
@@ -273,7 +250,8 @@ export class CreditCardProcessor {
 
         return ccresult;
     }
-
+    
+    /// Charge a card without pre-authorization    
     async ChargeCard(card: ICreditCardItem): Promise<ChargeResult> {
 
         let ccresult = new ChargeResult();
@@ -295,10 +273,10 @@ export class CreditCardProcessor {
 
                         let charge = await cloverClient.CreateCharge(token);
 
-                        charge.amount = card.amountCharge * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001                        
+                        charge.amount = card.amount * 100; //0.10 = 100, 10.00 * 100 = 1000, 10.01 * 100 = 1001                        
                         charge.external_customer_reference = card.external_customer_reference;
                         charge.external_reference_id = card.external_reference_id;
-                        charge.clientip = card.clientIP;
+                        charge.clientip = card.clientip;
 
                         let returnData: any = await cloverClient.ChargeCard(charge);
                         if (returnData.paid === true && returnData.status === "succeeded") {
@@ -332,7 +310,7 @@ export class CreditCardProcessor {
                             zip: card.address_zip
                         },
                         payment: {
-                            amount: card.amountCharge,
+                            amount: card.amount,
                             exp_month: card.exp_month,
                             exp_year: card.exp_year,
                             ccnumber: card.number,

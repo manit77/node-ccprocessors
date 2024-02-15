@@ -14,9 +14,9 @@ export class Logger {
         default: {
           type: 'dateFile'
           , filename: logfilepathandname
-          , "pattern": "yyyy-MM-dd.txt"
+          //, "pattern": "yyyy-MM-dd"
           , alwaysIncludePattern: true
-          , daysToKeep: 30
+          , daysToKeep: 15
           , keepFileExt: true
         },
         // task: { type: 'dateFile', filename: 'logs/task',"pattern":"yyyy-MM-dd.log", alwaysIncludePattern:true },

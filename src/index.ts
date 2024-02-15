@@ -1,89 +1,104 @@
 import express from "express";
-import { GetENV } from "./env";
+import { GetENV } from "./utils/env";
 import cors from "cors";
-import { Logger } from "./logger";
-import { CreditCardProcessor } from "./creditCardProcessor";
-import { ICreditCardItem } from "./models";
+import { Logger } from "./models/logger";
+import { CreditCardProcessor } from "./models/creditCardProcessor";
+import { AuthTokenObject, IAuthorization, ICreditCardItem, IWebService, IWebServiceDeps } from "./models/models";
+import jwt from "jsonwebtoken";
+import { AppServer } from "./appServer";
+import { AppConfig } from "./models/appConfig";
+
 let fs = require('fs');
 
 (async () => {
 
-    let config = await GetENV();
+    let env = await GetENV();
+    let appConfig = new AppConfig(env);
+    let logger = new Logger(appConfig.logfilepathandname());    
+    let token_secret = appConfig.token_secret_key();
+    let http_port : string = appConfig.http_port();
 
-    let version = "ccprocessors 1.0";
-    let logger = new Logger(config.logfilepathandname);
-    logger.WriteLog(`starting ${version}`);
+    //show configs
+    logger.WriteLog(`app_name: ${appConfig.app_name()}`);
+    logger.WriteLog(`app_version: ${appConfig.app_version()}`);
+    logger.WriteLog(`http_port: ${appConfig.http_port()}`);
+    logger.WriteLog(`logfilepathandname: ${appConfig.logfilepathandname()}`);
 
-    let ccProcessor = new CreditCardProcessor(config);
+    let serviceDeps :IWebServiceDeps = {
+        AppConfig: appConfig
+    }
 
+    let appServer = new AppServer(serviceDeps);
+    let services = appServer.GetServices()
+
+    /// begin webserver code
     const expressApp = express();
     let httpServer = null;
     let isHttps = false;
-    if (config.cert_key_path && config.cert_cert_path) {
+    if (appConfig.cert_key_path && appConfig.cert_cert_path()) {
         let options = {
-            key: fs.readFileSync(config.cert_key_path),
-            cert: fs.readFileSync(config.cert_cert_path)
+            key: fs.readFileSync(appConfig.cert_key_path()),
+            cert: fs.readFileSync(appConfig.cert_cert_path())
         }
         logger.WriteLog(options);
-        
+
         httpServer = require("https").createServer(options, expressApp);
         isHttps = true;
     } else {
         httpServer = require("http").createServer(expressApp);
-    }
-
-    let http_port = config.http_port;
+    }    
 
     expressApp.use(cors());
     expressApp.use(express.json({ limit: '100mb' }));
     expressApp.use(express.urlencoded({ extended: true }));
     expressApp.options('*', cors());
+    expressApp.use(ExpressErrorHandling);
 
     expressApp.get("/version", async function (req, res) {
-        res.json(version);
+        res.json(appConfig.app_version());
     });
 
-    expressApp.post("/v1/authorizecard", async function (req, res, next) {
-        try {
+    //register all services
+    for (let i = 0; i < services.length; i++) {
+        let api = services[i];
+        RegisterService(api);
+    }
+   
+    function RegisterService(service: IWebService) {
+        let routes = service.GetRoutes();
+        for (let index = 0; index < routes.length; index++) {
+            const route = routes[index];
 
-            if (req.body) {
-                let result = await ccProcessor.AuthorizeCard(req.body as ICreditCardItem);
-                res.json(result);
+            logger.WriteLog(`register route ${route.Path}`);
+
+            if (route.Authenticated) {
+                expressApp.post(route.Path, DecodeAuthToken, async function (req, res, next) {
+                    try {
+                        logger.WriteLog("auth post " + route.Path);
+                        //const authToken: string = (req as any).authToken;
+                        const authTokenObject = (req as any).authTokenObject as AuthTokenObject;
+                        //PARSEPOSTDATA(req.body);
+                        const returnData = await route.FnCall.bind(service)(authTokenObject, req.body);
+                        res.json(returnData);
+
+                    } catch (err) {
+                        ExpressErrorHandling(err, req, res, next);
+                    }
+                });
             } else {
-                res.end();
+                expressApp.post(route.Path, async function (req, res, next) {
+                    try {
+                        logger.WriteLog("guest post " + route.Path);
+                        //PARSEPOSTDATA(req.body);
+                        const returnData = await route.FnCall.bind(service)(req.body);
+                        res.json(returnData);
+                    } catch (err) {
+                        ExpressErrorHandling(err, req, res, next);
+                    }
+                });
             }
-        } catch (err) {
-            ExpressErrorHandling(err, req, res, next);
         }
-    });
-
-    expressApp.post("/v1/authorizecharge", async function (req, res, next) {
-        try {
-
-            if (req.body) {
-                let result = await ccProcessor.ChargeAuthorization(req.body as ICreditCardItem);
-                res.json(result);
-            } else {
-                res.end();
-            }
-        } catch (err) {
-            ExpressErrorHandling(err, req, res, next);
-        }
-    });
-
-    expressApp.post("/v1/chargecard", async function (req, res, next) {
-        try {
-
-            if (req.body) {
-                let result = await ccProcessor.ChargeCard(req.body as ICreditCardItem);
-                res.json(result);
-            } else {
-                res.end();
-            }
-        } catch (err) {
-            ExpressErrorHandling(err, req, res, next);
-        }
-    });
+    }
 
     function ExpressErrorHandling(err: any, req: any, res: any, next: any) {
         GlobalErrorsHandling(err);
@@ -104,17 +119,53 @@ let fs = require('fs');
         if (err.stack) {
             logger.WriteLog(err.stack);
         }
-        
+
         if (err.innerStack) {
             logger.WriteLog(err.innerStack);
         }
 
     }
 
-    expressApp.use(ExpressErrorHandling);
+    function DecodeAuthToken(
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction | null
+    ) {
+
+        const bearerHeader = req.headers["authorization"];
+        if (bearerHeader) {
+            const bearer = bearerHeader.split(" ");          
+            const bearerToken: string = bearer[1];
+            try {
+
+                let jwtAuthToken = jwt.verify(
+                    bearerToken,
+                    token_secret
+                ) as AuthTokenObject;
+
+                let authTokenObject : AuthTokenObject = {
+                    userid: jwtAuthToken.userid, 
+                    username: jwtAuthToken.username
+                };
+
+                (req as any).authToken = bearerToken;
+                (req as any).authTokenObject = authTokenObject;
+
+                if (next) {
+                    next();
+                }
+
+            } catch (err) {
+                res.sendStatus(403);
+            }
+
+        } else {
+            res.sendStatus(403);
+        }
+    }
 
     httpServer.listen(http_port, () => {
-        logger.WriteLog(`${version} running on ${isHttps ? "https" : "http"} on port ${http_port}`);
+        logger.WriteLog(`${appConfig.app_version()} running on ${isHttps ? "https" : "http"} on port ${http_port}`);
     });
 
 })();

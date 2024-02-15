@@ -1,6 +1,6 @@
-import * as utils from "./utilities"
-import { ICreditCardItem } from "./models";
-import { IProcessorClient } from "./iProcessorClient";
+import * as utils from "../utils/utilities"
+import { ICreditCardItem } from "../models/models";
+import { IProcessorClient } from "../models/iProcessorClient";
 import { clone } from "lodash"
 import axios from "axios";
 

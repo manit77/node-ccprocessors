@@ -1,4 +1,4 @@
-import { CCFormatAmount, CCFormatMM, CCIsCardExpired, IsNullOrUndefined, ParseBool, ParseNum, ParseString } from "../utilities";
+import { CCFormatAmount, CCFormatMM, CCIsCardExpired, IsNullOrUndefined, ParseBool, ParseNum, ParseString } from "../utils/utilities";
 
 describe('Test utilities.ts', () => {
 
@@ -161,7 +161,4 @@ describe('Test utilities.ts', () => {
 
   });
 
-  
-
-
-  });
+});

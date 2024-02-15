@@ -1,7 +1,7 @@
 import querystring from 'querystring';
 import https from 'https'
-import { CCFormatAmount, CCFormatMM, CCIsCardExpired, IsNullOrUndefined, ParseQueryString } from 'src/utilities';
-import { IProcessorClient } from './iProcessorClient';
+import { CCFormatAmount, CCFormatMM, CCIsCardExpired, IsNullOrUndefined, ParseQueryString } from 'src/utils/utilities';
+import { IProcessorClient } from '../models/iProcessorClient';
 import { clone } from 'lodash';
 
 //reference: https://connect.transactiongateway.com/merchants/resources/integration/integration_portal.php
