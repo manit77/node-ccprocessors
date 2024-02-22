@@ -1,5 +1,5 @@
-import { CreditCardProcessor } from "src/models/creditCardProcessor";
-import { ChargeResult, IAuthorization, ICreditCardItem, IWebService, IWebServiceDeps, Route } from "src/models/models";
+import { CreditCardProcessor } from "../models/creditCardProcessor";
+import { ChargeResult, IAuthorization, ICreditCardItem, IWebService, IWebServiceDeps, Route } from "../models/models";
 
 export class CreditCardService implements IWebService {
 

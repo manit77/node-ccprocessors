@@ -141,6 +141,8 @@ export class CreditCardProcessor {
                     ccresult.message = returnData.responsetext;
                     ccresult.result = JSON.stringify(returnData);
 
+                    console.log(ccresult);
+
                 } catch (err: any) {
                     ccresult.success = false;
                     ccresult.result = JSON.stringify(err);

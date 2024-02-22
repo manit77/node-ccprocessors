@@ -2,8 +2,7 @@ import express from "express";
 import { GetENV } from "./utils/env";
 import cors from "cors";
 import { Logger } from "./models/logger";
-import { CreditCardProcessor } from "./models/creditCardProcessor";
-import { AuthTokenObject, IAuthorization, ICreditCardItem, IWebService, IWebServiceDeps } from "./models/models";
+import { AuthTokenObject, IWebService, IWebServiceDeps } from "./models/models";
 import jwt from "jsonwebtoken";
 import { AppServer } from "./appServer";
 import { AppConfig } from "./models/appConfig";
@@ -14,7 +13,7 @@ let fs = require('fs');
 
     let env = await GetENV();
     let appConfig = new AppConfig(env);
-    let logger = new Logger(appConfig.logfilepathandname());    
+    let logger = new Logger(appConfig.logfilepathandname());
     let token_secret = appConfig.token_secret_key();
     let http_port : string = appConfig.http_port();
 
@@ -46,7 +45,7 @@ let fs = require('fs');
         isHttps = true;
     } else {
         httpServer = require("http").createServer(expressApp);
-    }    
+    }
 
     expressApp.use(cors());
     expressApp.use(express.json({ limit: '100mb' }));
