@@ -143,13 +143,16 @@ export class CeleroClient implements IProcessorClient {
         //change the exp date
         let paymentfmt = clone<any>(payment);
         paymentfmt["ccexp"] = CCFormatMM(payment.exp_month) + payment.exp_year;
-        delete payment.exp_month;
-        delete payment.exp_year;
+        delete paymentfmt.exp_month;
+        delete paymentfmt.exp_year;
         paymentfmt["amount"] = CCFormatAmount(payment.amount);
 
         Object.assign(postData, paymentfmt, billing);
 
+        console.log(postData);
+
         let result = await this.httpRequest(postData);
+
 
         // let datastr = querystring.stringify(postData)
         // const options = {
@@ -178,8 +181,8 @@ export class CeleroClient implements IProcessorClient {
         paymentfmt["ccexp"] = CCFormatMM(payment.exp_month) + payment.exp_year;
         paymentfmt["amount"] = CCFormatAmount(payment.amount);
 
-        delete payment.exp_month;
-        delete payment.exp_year;
+        delete paymentfmt.exp_month;
+        delete paymentfmt.exp_year;
 
         Object.assign(postData, paymentfmt, billing);
 

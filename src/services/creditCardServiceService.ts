@@ -51,7 +51,7 @@ export class CreditCardService implements IWebService {
 
     async ChargeCard(card: ICreditCardItem): Promise<ChargeResult> {
         try {
-            return await this.ccProcessor.AuthorizeCard(card);
+            return await this.ccProcessor.ChargeCard(card);
         } catch (err) {
             throw err;
         }
