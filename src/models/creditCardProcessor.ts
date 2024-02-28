@@ -127,7 +127,7 @@ export class CreditCardProcessor {
                             exp_month: card.exp_month,
                             ccnumber: card.number,
                             cvv: card.cvv,
-                            orderid: card.external_customer_reference,
+                            orderid: card.external_reference_id,
                             type: "auth"
                         }
                     }
