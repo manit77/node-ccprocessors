@@ -6,7 +6,7 @@ import { clone } from 'lodash';
 
 //reference: https://connect.transactiongateway.com/merchants/resources/integration/integration_portal.php
 
-let CeleroResultCodes = {
+export const CeleroResultCodes = {
     "100": "Transaction was approved.",
     "200": "Transaction was declined by processor.",
     "201": "Do not honor.",

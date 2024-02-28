@@ -1,6 +1,6 @@
 import { CloverCharge, CloverClient } from "../clients/cloverClient";
 import { IProcessorClient } from "./iProcessorClient";
-import { CeleroCharge, CeleroClient } from "../clients/celeroClient"
+import { CeleroCharge, CeleroClient, CeleroResultCodes } from "../clients/celeroClient"
 import { CCBrands, ChargeResult, ICreditCardItem, CCProcessors, IAuthorization } from "./models";
 import * as utils from "../utils/utilities"
 import NodeCache from "node-cache";
@@ -220,16 +220,21 @@ export class CreditCardProcessor {
                             type: "capture",
                         }
                     }
-                    let returnData = await celeroClient.ChargeAuthorization(charge);
-                    if (returnData.response_code == "100") {
+                    let celerRes = await celeroClient.ChargeAuthorization(charge);
+                    if (celerRes.response_code == "100") {
                         ccresult.success = true;
 
                     } else {
                         ccresult.success = false;
                     }
 
-                    ccresult.message = returnData.responsetext;
-                    ccresult.result = JSON.stringify(returnData);
+                    ccresult.message = celerRes.responsetext;
+                    ccresult.result = JSON.stringify(celerRes);
+
+                    //return friendly message
+                    if(CeleroResultCodes[celerRes.response_code]) {
+                        ccresult.message = CeleroResultCodes[celerRes.response_code];
+                    }
 
                 } catch (err: any) {
                     ccresult.success = false;
@@ -332,6 +337,11 @@ export class CreditCardProcessor {
 
                     ccresult.message = celerRes.responsetext;
                     ccresult.result = JSON.stringify(celerRes);
+
+                    //return friendly message
+                    if(CeleroResultCodes[celerRes.response_code]){
+                        ccresult.message = CeleroResultCodes[celerRes.response_code];
+                    }
 
                 } catch (err: any) {
                     ccresult.success = false;
