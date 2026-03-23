@@ -53,8 +53,12 @@ let fs = require('fs');
     expressApp.options('*', cors());
     expressApp.use(ExpressErrorHandling);
 
-    expressApp.get("/version", async function (req, res) {
-        res.json(appConfig.app_version());
+    // GET / route to return app name and version
+    expressApp.get("/", async function (req, res) {
+        res.json({
+            appname: appConfig.app_name(),
+            version: appConfig.app_version()
+        });
     });
 
     //register all services
