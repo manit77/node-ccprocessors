@@ -1,17 +1,35 @@
-import { ReadFile } from "src/utils/utilities";
+import path from "path";
+import * as fssynch from "fs";
+import { FileExists } from "src/utils/utilities";
 
 export class AppConfig {
 
-    constructor(private env: any) {
+    private packageJson: { name?: string; version?: string } | null = null;
 
-    }   
+    constructor(private env: any) {
+        const pkgPath = path.join(process.cwd(), "package.json");
+        if (FileExists(pkgPath)) {
+            try {
+                const raw = fssynch.readFileSync(pkgPath, "utf8");
+                this.packageJson = JSON.parse(raw);
+            } catch {
+                this.packageJson = null;
+            }
+        }
+    }
 
     public app_name() {
-        return this.GetConfig("app_name");
+        if (this.packageJson && typeof this.packageJson.name === "string") {
+            return this.packageJson.name;
+        }
+        return "";
     }
 
     public app_version() {
-        return this.GetConfig("app_version");
+        if (this.packageJson && typeof this.packageJson.version === "string") {
+            return this.packageJson.version;
+        }
+        return "";
     }
 
     public cc_token() {
