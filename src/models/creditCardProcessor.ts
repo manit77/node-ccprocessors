@@ -201,7 +201,7 @@ export class CreditCardProcessor {
                         ccresult.message = err.message;
                     } else {
                         if (utils.IsString(err)) {
-                            ccresult.message = err;
+                            ccresult.message = err as string;
                         } else {
                             ccresult.message = "error charging credit card.";
                         }

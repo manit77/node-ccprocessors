@@ -1,6 +1,6 @@
 {
   "name": "ccprocessors",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "jest-cli": "node .\\node_modules\\jest-cli\\bin\\jest.js",
     "test-clover": "ts-node -r tsconfig-paths/register ./src/tests/test-live-clover.ts",
     "test-celero": "ts-node -r tsconfig-paths/register ./src/tests/test-live-celero.ts",
-    "servelocal": "ts-node -r tsconfig-paths/register ./src/index.ts"
+    "servelocal": "ts-node -r tsconfig-paths/register ./src/index.ts",
+    "build": "tsc --build --force"
   },
   "author": "Manit Chanthavong",
   "license": "ISC",
