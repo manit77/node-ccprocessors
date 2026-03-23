@@ -1,5 +1,5 @@
 import express from "express";
-import { GetENV } from "./utils/env";
+import { getConfig } from "./utils/env";
 import cors from "cors";
 import { Logger } from "./models/logger";
 import { AuthTokenObject, IWebService, IWebServiceDeps } from "./models/models";
@@ -11,8 +11,8 @@ let fs = require('fs');
 
 (async () => {
 
-    let env = await GetENV();
-    let appConfig = new AppConfig(env);
+    let config = await getConfig();
+    let appConfig = new AppConfig(config);
     let logger = new Logger(appConfig.logfilepathandname());
     let token_secret = appConfig.token_secret_key();
     let http_port : string = appConfig.http_port();
@@ -169,7 +169,7 @@ let fs = require('fs');
     }
 
     httpServer.listen(http_port, () => {
-        logger.WriteLog(`${appConfig.app_version()} running on ${isHttps ? "https" : "http"} on port ${http_port}`);
+        logger.WriteLog(`${appConfig.app_version()} running on ${isHttps ? "https" : "http"}://0.0.0.0:${http_port}`);
     });
 
 })();

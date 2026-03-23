@@ -6,7 +6,7 @@ export class AppConfig {
 
     private packageJson: { name?: string; version?: string } | null = null;
 
-    constructor(private env: any) {
+    constructor(private config: any) {
         const pkgPath = path.join(process.cwd(), "package.json");
         if (FileExists(pkgPath)) {
             try {
@@ -60,7 +60,7 @@ export class AppConfig {
     }
 
     GetConfig(key: string): string {
-        return this.env[key];
+        return this.config[key];
     }
 
 }
