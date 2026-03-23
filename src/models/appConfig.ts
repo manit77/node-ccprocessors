@@ -47,8 +47,8 @@ export class AppConfig {
         return this.GetConfig("cert_key_path");
     }
 
-    public cert_cert_path() {
-        return this.GetConfig("cert_cert_path");
+    public cert_chain_path() {
+        return this.GetConfig("cert_chain_path");
     }
 
     public logfilepathandname() {

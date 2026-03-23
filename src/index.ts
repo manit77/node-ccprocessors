@@ -34,16 +34,20 @@ let fs = require('fs');
     const expressApp = express();
     let httpServer = null;
     let isHttps = false;
-    if (appConfig.cert_key_path && appConfig.cert_cert_path()) {
+    logger.WriteLog(`cert_key_path: ${appConfig.cert_key_path()}`);    
+    logger.WriteLog(`cert_chain_path: ${appConfig.cert_chain_path()}`); 
+    if (appConfig.cert_chain_path() && appConfig.cert_key_path()) {
         let options = {
             key: fs.readFileSync(appConfig.cert_key_path()),
-            cert: fs.readFileSync(appConfig.cert_cert_path())
+            cert: fs.readFileSync(appConfig.cert_chain_path())
         }
         logger.WriteLog(options);
 
         httpServer = require("https").createServer(options, expressApp);
         isHttps = true;
+        logger.WriteLog(`using https server`);
     } else {
+        logger.WriteLog(`using http server`);
         httpServer = require("http").createServer(expressApp);
     }
 
@@ -78,9 +82,7 @@ let fs = require('fs');
                 expressApp.post(route.Path, DecodeAuthToken, async function (req, res, next) {
                     try {
                         logger.WriteLog("auth post " + route.Path);
-                        //const authToken: string = (req as any).authToken;
                         const authTokenObject = (req as any).authTokenObject as AuthTokenObject;
-                        //PARSEPOSTDATA(req.body);
                         const returnData = await route.FnCall.bind(service)(authTokenObject, req.body);
                         res.json(returnData);
 
@@ -91,8 +93,7 @@ let fs = require('fs');
             } else {
                 expressApp.post(route.Path, async function (req, res, next) {
                     try {
-                        logger.WriteLog("guest post " + route.Path);
-                        //PARSEPOSTDATA(req.body);
+                        logger.WriteLog("guest post " + route.Path);                        
                         const returnData = await route.FnCall.bind(service)(req.body);
                         res.json(returnData);
                     } catch (err) {
