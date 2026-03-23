@@ -1,6 +1,6 @@
 import path from "path";
 import * as fssynch from "fs";
-import { FileExists } from "src/utils/utilities";
+import { FileExists } from "../utils/utilities";
 
 export class AppConfig {
 
