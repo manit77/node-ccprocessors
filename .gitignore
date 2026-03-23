@@ -273,3 +273,6 @@ project.lock.json
 **/public/uploads/*
 **/temp/*
 dev-env*.json
+config.json
+.env
+.env.json
