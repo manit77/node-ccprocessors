@@ -1,6 +1,6 @@
 import { CeleroCharge, CeleroClient } from "src/clients/celeroClient";
 import { CreditCardProcessor } from "../models/creditCardProcessor";
-import { GetENV } from '../utils/env'
+import { getConfig } from '../utils/env'
 import { CCBrands, ChargeResult, ICreditCardItem, CCProcessors, IAuthorization } from "../models/models";
 import { AppConfig } from "src/models/appConfig";
 
@@ -37,7 +37,7 @@ export class CreditCardItem implements ICreditCardItem {
 
 (async () => {
 
-    let env = await GetENV(CONFIGFILE);
+    let env = await getConfig(CONFIGFILE);
     let appConfig = new AppConfig(env);
     let ccProc = new CreditCardProcessor(appConfig);
 
