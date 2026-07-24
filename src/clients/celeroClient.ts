@@ -92,8 +92,21 @@ export class CeleroClient implements IProcessorClient {
     hostName = 'connect.transactiongateway.com';
     path = '/api/transact.php';
 
-    constructor(private security_key) {
+    constructor(private security_key, private environment: string = "") {
         this.security_key = security_key;
+        this.environment = environment;
+    }
+
+    private CreatePostData(): { security_key: string; test_mode?: string } {
+        let postData: { security_key: string; test_mode?: string } = {
+            security_key: this.security_key
+        };
+
+        if (this.environment.toLowerCase() === "development") {
+            postData.test_mode = "enabled";
+        }
+
+        return postData;
     }
 
     async AuthorizeCard(charge: CeleroCharge) {
@@ -134,9 +147,7 @@ export class CeleroClient implements IProcessorClient {
             throw "Celero security_key is required."
         }
 
-        let postData = {
-            security_key: this.security_key
-        };
+        let postData = this.CreatePostData();
 
         payment.type = "sale";
 
@@ -172,9 +183,7 @@ export class CeleroClient implements IProcessorClient {
         if (!this.security_key) {
             throw "Celero security_key is required."
         }
-        let postData = {
-            security_key: this.security_key
-        };
+        let postData = this.CreatePostData();
         payment.type = "auth";
 
         let paymentfmt = clone<any>(payment);
@@ -209,9 +218,7 @@ export class CeleroClient implements IProcessorClient {
             throw "Celero security_key is required."
         }
 
-        let postData = {
-            security_key: this.security_key
-        };
+        let postData = this.CreatePostData();
 
         let capturefmt = clone<any>(capture);
         capturefmt.type = "capture";

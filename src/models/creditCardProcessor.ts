@@ -24,8 +24,10 @@ export class CreditCardProcessor {
             return this.ccClient;
         } else if (ptype == CCProcessors.celero) {
             if (this.ccClient == null) {
-                //Celero environment is handled in the admin interface
-                this.ccClient = new CeleroClient(this.appConfig.cc_token());
+                this.ccClient = new CeleroClient(
+                    this.appConfig.cc_token(),
+                    this.appConfig.cc_environment()
+                );
             }
             return this.ccClient;
         }
